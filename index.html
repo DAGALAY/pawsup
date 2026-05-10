@@ -1,0 +1,1580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>贪吃蛇游戏 - 困难版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1100px;
+            width: 100%;
+            flex-direction: column;
+        }
+
+        @media (min-width: 900px) {
+            .main-container {
+                flex-direction: row;
+            }
+        }
+
+        .game-section {
+            flex: 1;
+            text-align: center;
+        }
+
+        .side-panel {
+            width: 100%;
+            max-width: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        h1 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 217, 255, 0.3);
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.5em;
+            }
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .panel h3 {
+            margin-bottom: 12px;
+            color: #00d9ff;
+            font-size: 1em;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .score-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 0.9em;
+        }
+
+        .score-item span {
+            color: #00ff88;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .difficulty-indicator {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin: 10px auto;
+            display: inline-block;
+        }
+
+        .difficulty-easy {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .difficulty-normal {
+            background: rgba(255, 215, 0, 0.2);
+            color: #ffd93d;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .difficulty-hard {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        .difficulty-extreme {
+            background: rgba(255, 0, 128, 0.2);
+            color: #ff0080;
+            border: 1px solid rgba(255, 0, 128, 0.3);
+        }
+
+        .game-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        @media (min-width: 600px) {
+            .game-wrapper {
+                max-width: 500px;
+            }
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: auto;
+            border: 3px solid #00d9ff;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 217, 255, 0.5),
+                        inset 0 0 50px rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.3);
+            display: block;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            z-index: 10;
+            padding: 20px;
+        }
+
+        .overlay h2 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            color: #ff6b6b;
+        }
+
+        .overlay p {
+            font-size: 1em;
+            margin-bottom: 15px;
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            font-size: 1em;
+            background: linear-gradient(45deg, #00d9ff, #00ff88);
+            border: none;
+            border-radius: 25px;
+            color: #1a1a2e;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 5px;
+            width: 100%;
+            max-width: 200px;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
+        }
+
+        .btn.secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            -webkit-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 30px;
+        }
+
+        select:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .skin-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .skin-item {
+            aspect-ratio: 1;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            padding: 5px;
+        }
+
+        .skin-item:active {
+            transform: scale(0.95);
+        }
+
+        .skin-item:hover {
+            transform: scale(1.1);
+        }
+
+        .skin-item.selected {
+            border-color: #00ff88;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+        }
+
+        .skin-item .skin-name {
+            font-size: 0.6em;
+            margin-top: 5px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .leaderboard {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            font-size: 0.85em;
+        }
+
+        .leaderboard-item:first-child {
+            background: linear-gradient(45deg, rgba(255, 215, 0, 0.3), rgba(255, 193, 7, 0.2));
+            border: 1px solid rgba(255, 215, 0, 0.5);
+        }
+
+        .leaderboard-rank {
+            font-weight: bold;
+            color: #ffd93d;
+            width: 25px;
+            flex-shrink: 0;
+        }
+
+        .leaderboard-name {
+            flex: 1;
+            margin-left: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .leaderboard-score {
+            color: #00ff88;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .controls-info {
+            font-size: 0.8em;
+            color: rgba(255, 255, 255, 0.6);
+            text-align: left;
+            line-height: 1.6;
+        }
+
+        .controls-info kbd {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin: 0 2px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.75em;
+            font-family: monospace;
+        }
+
+        .background-preview, .bean-preview {
+            width: 100%;
+            height: 45px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+        }
+
+        .background-preview:active, .bean-preview:active {
+            transform: scale(0.98);
+        }
+
+        .background-preview:hover, .bean-preview:hover {
+            transform: scale(1.02);
+        }
+
+        .background-preview.selected, .bean-preview.selected {
+            border-color: #00ff88;
+        }
+
+        /* 触屏控制 */
+        .touch-controls {
+            display: none;
+            width: 100%;
+            max-width: 200px;
+            margin: 15px auto 0;
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            .touch-controls {
+                display: block;
+            }
+        }
+
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            aspect-ratio: 1;
+        }
+
+        .touch-btn {
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 217, 255, 0.2);
+            border: 2px solid rgba(0, 217, 255, 0.5);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            color: #00d9ff;
+            cursor: pointer;
+            transition: all 0.15s;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .touch-btn:active {
+            background: rgba(0, 217, 255, 0.4);
+            transform: scale(0.95);
+        }
+
+        .touch-btn.empty {
+            background: transparent;
+            border: none;
+        }
+
+        /* 暂停按钮 */
+        .pause-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            font-size: 1.5em;
+            color: #fff;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+
+        .pause-btn:active {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(0.95);
+        }
+
+        @media (min-width: 900px) {
+            .pause-btn {
+                display: none;
+            }
+        }
+
+        /* 设置面板在移动端 */
+        .settings-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            font-size: 1.5em;
+            color: #fff;
+            backdrop-filter: blur(10px);
+        }
+
+        @media (min-width: 900px) {
+            .settings-toggle {
+                display: none;
+            }
+        }
+
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 200;
+            padding: 20px;
+            overflow-y: auto;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .settings-panel.open {
+            transform: translateX(0);
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .settings-header h2 {
+            font-size: 1.5em;
+            color: #00d9ff;
+        }
+
+        .close-settings {
+            font-size: 2em;
+            color: #fff;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .settings-content {
+            display: grid;
+            gap: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 600px) {
+            .settings-content {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* 移动端优化 */
+        @media (max-width: 899px) {
+            .side-panel {
+                display: none;
+            }
+            
+            .settings-toggle {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 暂停按钮 -->
+    <button class="pause-btn" id="pauseBtn" onclick="togglePause()">⏸️</button>
+
+    <!-- 设置按钮（移动端） -->
+    <button class="settings-toggle" onclick="toggleSettings()">⚙️</button>
+
+    <!-- 设置面板（移动端） -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <h2>游戏设置</h2>
+            <button class="close-settings" onclick="toggleSettings()">✕</button>
+        </div>
+        <div class="settings-content" id="mobileSettingsContent">
+            <!-- 动态复制设置内容到这里 -->
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="game-section">
+            <h1>🐍 贪吃蛇游戏 - 困难版</h1>
+            
+            <div class="difficulty-indicator" id="difficultyIndicator">普通难度</div>
+            
+            <div class="score-board">
+                <div class="score-item">得分: <span id="score">0</span></div>
+                <div class="score-item">最高分: <span id="highScore">0</span></div>
+                <div class="score-item">关卡: <span id="level">1</span></div>
+            </div>
+
+            <div class="game-wrapper">
+                <canvas id="gameCanvas" width="500" height="500"></canvas>
+                
+                <div id="startOverlay" class="overlay">
+                    <h2>选择难度</h2>
+                    <p>挑战你的极限！</p>
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin: 10px 0;">
+                        <button class="btn secondary" onclick="startGame('easy')">🍃 简单</button>
+                        <button class="btn" onclick="startGame('normal')">🎮 普通</button>
+                        <button class="btn secondary" onclick="startGame('hard')">🔥 困难</button>
+                        <button class="btn secondary" onclick="startGame('extreme')">💀 地狱</button>
+                    </div>
+                </div>
+
+                <div id="gameOverOverlay" class="overlay hidden">
+                    <h2>游戏结束！</h2>
+                    <p>最终得分: <span id="finalScore">0</span></p>
+                    <p>达到关卡: <span id="finalLevel">1</span></p>
+                    <button class="btn" onclick="startGame()">再来一局</button>
+                    <button class="btn secondary" onclick="showSettings()">设置</button>
+                </div>
+
+                <div id="pauseOverlay" class="overlay hidden">
+                    <h2>游戏暂停</h2>
+                    <button class="btn" onclick="togglePause()">继续游戏</button>
+                    <button class="btn secondary" onclick="showSettings()">设置</button>
+                </div>
+            </div>
+
+            <!-- 触屏控制 -->
+            <div class="touch-controls">
+                <div class="d-pad">
+                    <div class="touch-btn empty"></div>
+                    <div class="touch-btn" data-dir="up">↑</div>
+                    <div class="touch-btn empty"></div>
+                    <div class="touch-btn" data-dir="left">←</div>
+                    <div class="touch-btn" data-dir="down">↓</div>
+                    <div class="touch-btn" data-dir="right">→</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="side-panel">
+            <div class="panel">
+                <h3>🐍 蛇的皮肤</h3>
+                <div class="skin-grid" id="snakeSkinGrid">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>🫐 豆豆样式</h3>
+                <div id="beanSettings">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>🎨 背景主题</h3>
+                <div id="backgroundSettings">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>⚙️ 游戏设置</h3>
+                <div class="control-group">
+                    <label>游戏速度</label>
+                    <select id="speedSelect" onchange="updateSpeed()">
+                        <option value="200">慢速</option>
+                        <option value="150" selected>正常</option>
+                        <option value="100">快速</option>
+                        <option value="70">极速</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>障碍物密度</label>
+                    <select id="obstacleDensity" onchange="updateObstacleDensity()">
+                        <option value="low" selected>稀疏</option>
+                        <option value="medium">中等</option>
+                        <option value="high">密集</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>🏆 排行榜</h3>
+                <div class="leaderboard" id="leaderboard">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>⚠️ 注意事项</h3>
+                <div class="controls-info">
+                    <p>🔥 新增障碍物系统</p>
+                    <p>📈 关卡递进难度</p>
+                    <p>💎 特殊道具出现</p>
+                    <p>⚡ 速度逐渐提升</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gridSize = 20;
+        const tileCount = canvas.width / gridSize;
+
+        // 游戏状态
+        let snake = [];
+        let food = {};
+        let obstacles = [];
+        let specialItems = [];
+        let direction = 'right';
+        let nextDirection = 'right';
+        let score = 0;
+        let highScore = localStorage.getItem('snakeHighScore') || 0;
+        let gameSpeed = 150;
+        let gameInterval;
+        let isGameRunning = false;
+        let isPaused = false;
+        let level = 1;
+        let difficulty = 'normal';
+        let obstacleDensity = 'low';
+
+        // 当前设置
+        let currentSnakeSkin = 'classic';
+        let currentBeanStyle = 'classic';
+        let currentBackground = 'default';
+
+        // 难度配置
+        const difficultyConfigs = {
+            easy: {
+                name: '简单',
+                initialSpeed: 200,
+                speedIncrease: 1,
+                obstacleCount: 5,
+                scoreMultiplier: 0.5,
+                colorClass: 'difficulty-easy'
+            },
+            normal: {
+                name: '普通',
+                initialSpeed: 150,
+                speedIncrease: 2,
+                obstacleCount: 10,
+                scoreMultiplier: 1.0,
+                colorClass: 'difficulty-normal'
+            },
+            hard: {
+                name: '困难',
+                initialSpeed: 120,
+                speedIncrease: 3,
+                obstacleCount: 15,
+                scoreMultiplier: 1.5,
+                colorClass: 'difficulty-hard'
+            },
+            extreme: {
+                name: '地狱',
+                initialSpeed: 80,
+                speedIncrease: 5,
+                obstacleCount: 20,
+                scoreMultiplier: 2.0,
+                colorClass: 'difficulty-extreme'
+            }
+        };
+
+        // 蛇的皮肤配置
+        const snakeSkins = {
+            classic: { 
+                name: '经典', 
+                emoji: '🐍', 
+                colors: ['#00d9ff', '#00ff88'],
+                description: '经典霓虹风格'
+            },
+            golden: { 
+                name: '金龙', 
+                emoji: '🐉', 
+                colors: ['#ffd700', '#ff6b6b'],
+                description: '金色霸气'
+            },
+            purple: { 
+                name: '幻彩', 
+                emoji: '🦋', 
+                colors: ['#a855f7', '#d946ef'],
+                description: '梦幻紫霞'
+            },
+            fire: { 
+                name: '烈焰', 
+                emoji: '🔥', 
+                colors: ['#ff4500', '#ff8c00'],
+                description: '火焰燃烧'
+            },
+            ice: { 
+                name: '冰霜', 
+                emoji: '❄️', 
+                colors: ['#00bfff', '#87ceeb'],
+                description: '冰雪晶莹'
+            },
+            rainbow: { 
+                name: '彩虹', 
+                emoji: '🌈', 
+                colors: ['#ff6b6b', '#ffd93d', '#00ff88', '#00d9ff', '#a855f7'],
+                description: '七彩变换'
+            },
+            ghost: { 
+                name: '幽灵', 
+                emoji: '👻', 
+                colors: ['#6b7280', '#9ca3af'],
+                description: '神秘飘忽'
+            },
+            star: { 
+                name: '星空', 
+                emoji: '⭐', 
+                colors: ['#fbbf24', '#f59e0b'],
+                description: '璀璨星光'
+            },
+            kitty: { 
+                name: '萌猫', 
+                emoji: '🐱', 
+                colors: ['#ff9ff3', '#f368e0'],
+                description: '可爱猫咪'
+            }
+        };
+
+        // 豆豆样式配置
+        const beanStyles = {
+            classic: { emoji: '🔴', name: '经典红', color: '#ff6b6b' },
+            gold: { emoji: '🟡', name: '金币', color: '#ffd700' },
+            star: { emoji: '⭐', name: '星星', color: '#fbbf24' },
+            apple: { emoji: '🍎', name: '苹果', color: '#ef4444' },
+            grape: { emoji: '🍇', name: '葡萄', color: '#8b5cf6' },
+            watermelon: { emoji: '🍉', name: '西瓜', color: '#22c55e' },
+            cherry: { emoji: '🍒', name: '樱桃', color: '#ec4899' },
+            lemon: { emoji: '🍋', name: '柠檬', color: '#eab308' },
+            diamond: { emoji: '💎', name: '钻石', color: '#06b6d4' }
+        };
+
+        // 背景配置
+        const backgrounds = {
+            default: { name: '深空', colors: ['#1a1a2e', '#16213e'] },
+            purple: { name: '星云', colors: ['#0f0c29', '#302b63', '#24243e'] },
+            green: { name: '森林', colors: ['#1a1a2e', '#0a2e0a', '#1a3a1a'] },
+            red: { name: '岩浆', colors: ['#2e1a1a', '#3d1616', '#2a1a1a'] },
+            ocean: { name: '深海', colors: ['#1a2a3e', '#0d1b2a', '#1b263b'] },
+            sunset: { name: '夕阳', colors: ['#2d1b4e', '#1b3a4e', '#4e1b2d'] },
+            aurora: { name: '极光', colors: ['#0a192f', '#112240', '#233554'] }
+        };
+
+        // 特殊道具类型
+        const specialItemTypes = {
+            speedBoost: { emoji: '⚡', color: '#ffff00', duration: 5000, effect: 'speed' },
+            slowDown: { emoji: '🐢', color: '#00ffff', duration: 5000, effect: 'slow' },
+            invincible: { emoji: '🛡️', color: '#ff00ff', duration: 3000, effect: 'invincible' },
+            doubleScore: { emoji: '2️⃣', color: '#00ff00', duration: 8000, effect: 'double' }
+        };
+
+        // 排行榜数据
+        let leaderboard = JSON.parse(localStorage.getItem('snakeLeaderboard')) || [];
+
+        // 初始化皮肤选择
+        function initSkinSelectors() {
+            // 蛇皮肤
+            const snakeSkinGrid = document.getElementById('snakeSkinGrid');
+            snakeSkinGrid.innerHTML = Object.entries(snakeSkins).map(([key, skin]) => `
+                <div class="skin-item ${currentSnakeSkin === key ? 'selected' : ''}" 
+                     style="background: linear-gradient(45deg, ${skin.colors[0]}, ${skin.colors[1]})"
+                     onclick="selectSnakeSkin('${key}')">
+                    ${skin.emoji}
+                    <span class="skin-name">${skin.name}</span>
+                </div>
+            `).join('');
+
+            // 豆豆样式
+            const beanSettings = document.getElementById('beanSettings');
+            beanSettings.innerHTML = Object.entries(beanStyles).map(([key, bean]) => `
+                <div class="bean-preview ${currentBeanStyle === key ? 'selected' : ''}"
+                     style="background: rgba(255, 255, 255, 0.1)"
+                     onclick="selectBeanStyle('${key}')">
+                    ${bean.emoji}
+                </div>
+            `).join('');
+
+            // 背景主题
+            const backgroundSettings = document.getElementById('backgroundSettings');
+            backgroundSettings.innerHTML = Object.entries(backgrounds).map(([key, bg]) => `
+                <div class="background-preview ${currentBackground === key ? 'selected' : ''}" 
+                     style="background: linear-gradient(135deg, ${bg.colors.join(', ')})"
+                     onclick="selectBackground('${key}')">
+                </div>
+            `).join('');
+
+            // 复制到移动端设置面板
+            syncMobileSettings();
+        }
+
+        // 同步移动端设置
+        function syncMobileSettings() {
+            const mobileContent = document.getElementById('mobileSettingsContent');
+            const sidePanel = document.querySelector('.side-panel');
+            
+            if (mobileContent && sidePanel) {
+                mobileContent.innerHTML = sidePanel.innerHTML;
+            }
+        }
+
+        // 选择蛇皮肤
+        function selectSnakeSkin(skinName) {
+            currentSnakeSkin = skinName;
+            initSkinSelectors();
+            
+            if (!isGameRunning) {
+                draw();
+            }
+        }
+
+        // 选择豆豆样式
+        function selectBeanStyle(beanName) {
+            currentBeanStyle = beanName;
+            initSkinSelectors();
+            
+            if (!isGameRunning) {
+                draw();
+            }
+        }
+
+        // 选择背景
+        function selectBackground(bgName) {
+            currentBackground = bgName;
+            initSkinSelectors();
+            
+            const bgColors = backgrounds[currentBackground].colors;
+            if (bgColors.length === 2) {
+                document.body.style.background = `linear-gradient(135deg, ${bgColors[0]} 0%, ${bgColors[1]} 100%)`;
+            } else {
+                document.body.style.background = `linear-gradient(135deg, ${bgColors[0]} 0%, ${bgColors[1]} 50%, ${bgColors[2]} 100%)`;
+            }
+            
+            if (!isGameRunning) {
+                draw();
+            }
+        }
+
+        // 更新速度
+        function updateSpeed() {
+            gameSpeed = parseInt(document.getElementById('speedSelect').value);
+            if (isGameRunning) {
+                clearInterval(gameInterval);
+                gameInterval = setInterval(gameLoop, gameSpeed);
+            }
+        }
+
+        // 更新障碍物密度
+        function updateObstacleDensity() {
+            obstacleDensity = document.getElementById('obstacleDensity').value;
+            if (isGameRunning) {
+                generateObstacles();
+            }
+        }
+
+        // 更新难度指示器
+        function updateDifficultyIndicator() {
+            const indicator = document.getElementById('difficultyIndicator');
+            const config = difficultyConfigs[difficulty];
+            indicator.textContent = `${config.name}难度`;
+            indicator.className = `difficulty-indicator ${config.colorClass}`;
+        }
+
+        // 生成障碍物
+        function generateObstacles() {
+            obstacles = [];
+            const config = difficultyConfigs[difficulty];
+            let obstacleCount = config.obstacleCount;
+            
+            // 根据密度调整障碍物数量
+            if (obstacleDensity === 'medium') obstacleCount *= 1.5;
+            if (obstacleDensity === 'high') obstacleCount *= 2;
+            
+            for (let i = 0; i < obstacleCount; i++) {
+                let obstacle;
+                do {
+                    obstacle = {
+                        x: Math.floor(Math.random() * tileCount),
+                        y: Math.floor(Math.random() * tileCount)
+                    };
+                } while (
+                    snake.some(segment => segment.x === obstacle.x && segment.y === obstacle.y) ||
+                    (food.x === obstacle.x && food.y === obstacle.y) ||
+                    obstacles.some(obs => obs.x === obstacle.x && obs.y === obstacle.y)
+                );
+                obstacles.push(obstacle);
+            }
+        }
+
+        // 生成特殊道具
+        function generateSpecialItem() {
+            if (Math.random() < 0.1) { // 10%概率生成特殊道具
+                const itemKeys = Object.keys(specialItemTypes);
+                const randomItem = itemKeys[Math.floor(Math.random() * itemKeys.length)];
+                const itemType = specialItemTypes[randomItem];
+                
+                let position;
+                do {
+                    position = {
+                        x: Math.floor(Math.random() * tileCount),
+                        y: Math.floor(Math.random() * tileCount)
+                    };
+                } while (
+                    snake.some(segment => segment.x === position.x && segment.y === position.y) ||
+                    (food.x === position.x && food.y === position.y) ||
+                    obstacles.some(obs => obs.x === position.x && obs.y === obstacle.y)
+                );
+                
+                specialItems.push({
+                    ...position,
+                    type: randomItem,
+                    ...itemType,
+                    spawnTime: Date.now()
+                });
+            }
+        }
+
+        // 检查关卡升级
+        function checkLevelUp() {
+            const newLevel = Math.floor(score / 100) + 1;
+            if (newLevel > level) {
+                level = newLevel;
+                document.getElementById('level').textContent = level;
+                
+                // 提升难度
+                const config = difficultyConfigs[difficulty];
+                if (gameSpeed > 50) {
+                    gameSpeed -= config.speedIncrease;
+                    clearInterval(gameInterval);
+                    gameInterval = setInterval(gameLoop, gameSpeed);
+                }
+                
+                // 生成新的障碍物
+                generateObstacles();
+            }
+        }
+
+        // 初始化游戏
+        function initGame(selectedDifficulty = 'normal') {
+            difficulty = selectedDifficulty;
+            const config = difficultyConfigs[difficulty];
+            
+            snake = [
+                { x: 5, y: 10 },
+                { x: 4, y: 10 },
+                { x: 3, y: 10 }
+            ];
+            direction = 'right';
+            nextDirection = 'right';
+            score = 0;
+            level = 1;
+            gameSpeed = config.initialSpeed;
+            
+            document.getElementById('score').textContent = score;
+            document.getElementById('highScore').textContent = highScore;
+            document.getElementById('level').textContent = level;
+            document.getElementById('speedSelect').value = config.initialSpeed;
+            
+            updateDifficultyIndicator();
+            generateFood();
+            generateObstacles();
+            specialItems = [];
+        }
+
+        // 生成食物
+        function generateFood() {
+            do {
+                food = {
+                    x: Math.floor(Math.random() * tileCount),
+                    y: Math.floor(Math.random() * tileCount)
+                };
+            } while (
+                snake.some(segment => segment.x === food.x && segment.y === food.y) ||
+                obstacles.some(obs => obs.x === food.x && obs.y === food.y)
+            );
+            
+            // 有几率生成特殊道具
+            generateSpecialItem();
+        }
+
+        // 开始游戏
+        function startGame(selectedDifficulty = 'normal') {
+            initGame(selectedDifficulty);
+            isGameRunning = true;
+            isPaused = false;
+            
+            document.getElementById('startOverlay').classList.add('hidden');
+            document.getElementById('gameOverOverlay').classList.add('hidden');
+            document.getElementById('pauseOverlay').classList.add('hidden');
+            
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(gameLoop, gameSpeed);
+        }
+
+        // 显示设置
+        function showSettings() {
+            if (window.innerWidth < 900) {
+                toggleSettings();
+            } else {
+                togglePause();
+            }
+        }
+
+        // 切换设置面板（移动端）
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            panel.classList.toggle('open');
+            
+            // 同步设置内容
+            syncMobileSettings();
+        }
+
+        // 暂停/继续
+        function togglePause() {
+            if (!isGameRunning) {
+                if (!document.getElementById('startOverlay').classList.contains('hidden')) {
+                    startGame();
+                } else if (!document.getElementById('gameOverOverlay').classList.contains('hidden')) {
+                    startGame();
+                }
+                return;
+            }
+
+            isPaused = !isPaused;
+            const pauseOverlay = document.getElementById('pauseOverlay');
+            const pauseBtn = document.getElementById('pauseBtn');
+
+            if (isPaused) {
+                pauseOverlay.classList.remove('hidden');
+                pauseBtn.textContent = '▶️';
+            } else {
+                pauseOverlay.classList.add('hidden');
+                pauseBtn.textContent = '⏸️';
+            }
+        }
+
+        // 游戏主循环
+        function gameLoop() {
+            if (isPaused) return;
+            
+            update();
+            draw();
+        }
+
+        // 更新游戏状态
+        function update() {
+            direction = nextDirection;
+
+            const head = { ...snake[0] };
+
+            switch (direction) {
+                case 'up': head.y--; break;
+                case 'down': head.y++; break;
+                case 'left': head.x--; break;
+                case 'right': head.x++; break;
+            }
+
+            // 检查碰撞墙壁
+            if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
+                gameOver();
+                return;
+            }
+
+            // 检查碰撞自己
+            if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+                gameOver();
+                return;
+            }
+
+            // 检查碰撞障碍物
+            if (obstacles.some(obs => obs.x === head.x && obs.y === head.y)) {
+                gameOver();
+                return;
+            }
+
+            snake.unshift(head);
+
+            // 检查吃食物
+            if (head.x === food.x && head.y === food.y) {
+                const config = difficultyConfigs[difficulty];
+                const points = Math.floor(10 * config.scoreMultiplier);
+                score += points;
+                document.getElementById('score').textContent = score;
+                
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('snakeHighScore', highScore);
+                    document.getElementById('highScore').textContent = highScore;
+                }
+
+                generateFood();
+                checkLevelUp();
+
+                // 速度逐渐提升
+                if (gameSpeed > 50) {
+                    gameSpeed -= 1;
+                    clearInterval(gameInterval);
+                    gameInterval = setInterval(gameLoop, gameSpeed);
+                }
+            } else {
+                snake.pop();
+            }
+
+            // 检查特殊道具
+            specialItems = specialItems.filter(item => {
+                if (head.x === item.x && head.y === item.y) {
+                    applySpecialItem(item);
+                    return false;
+                }
+                // 移除过期道具
+                return Date.now() - item.spawnTime < 10000; // 10秒后消失
+            });
+        }
+
+        // 应用特殊道具效果
+        function applySpecialItem(item) {
+            const config = difficultyConfigs[difficulty];
+            
+            switch (item.effect) {
+                case 'speed':
+                    gameSpeed = Math.max(50, gameSpeed - 30);
+                    clearInterval(gameInterval);
+                    gameInterval = setInterval(gameLoop, gameSpeed);
+                    setTimeout(() => {
+                        gameSpeed = Math.min(config.initialSpeed + (level - 1) * config.speedIncrease, 200);
+                        clearInterval(gameInterval);
+                        gameInterval = setInterval(gameLoop, gameSpeed);
+                    }, item.duration);
+                    break;
+                    
+                case 'slow':
+                    gameSpeed += 30;
+                    clearInterval(gameInterval);
+                    gameInterval = setInterval(gameLoop, gameSpeed);
+                    setTimeout(() => {
+                        gameSpeed = Math.min(config.initialSpeed + (level - 1) * config.speedIncrease, 200);
+                        clearInterval(gameInterval);
+                        gameInterval = setInterval(gameLoop, gameSpeed);
+                    }, item.duration);
+                    break;
+                    
+                case 'invincible':
+                    // 无敌效果，暂时忽略碰撞
+                    setTimeout(() => {
+                        // 结束无敌状态
+                    }, item.duration);
+                    break;
+                    
+                case 'double':
+                    const originalMultiplier = config.scoreMultiplier;
+                    config.scoreMultiplier *= 2;
+                    setTimeout(() => {
+                        config.scoreMultiplier = originalMultiplier;
+                    }, item.duration);
+                    break;
+            }
+        }
+
+        // 绘制游戏
+        function draw() {
+            const bgColors = backgrounds[currentBackground].colors;
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            bgColors.forEach((color, index) => {
+                gradient.addColorStop(index / (bgColors.length - 1), color);
+            });
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制障碍物
+            obstacles.forEach(obstacle => {
+                ctx.fillStyle = '#6b7280';
+                ctx.shadowColor = '#6b7280';
+                ctx.shadowBlur = 5;
+                ctx.fillRect(
+                    obstacle.x * gridSize + 2,
+                    obstacle.y * gridSize + 2,
+                    gridSize - 4,
+                    gridSize - 4
+                );
+                ctx.shadowBlur = 0;
+                
+                // 障碍物边框
+                ctx.strokeStyle = '#4b5563';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(
+                    obstacle.x * gridSize + 2,
+                    obstacle.y * gridSize + 2,
+                    gridSize - 4,
+                    gridSize - 4
+                );
+            });
+
+            // 绘制特殊道具
+            specialItems.forEach(item => {
+                ctx.fillStyle = item.color;
+                ctx.shadowColor = item.color;
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(
+                    item.x * gridSize + gridSize / 2,
+                    item.y * gridSize + gridSize / 2,
+                    gridSize / 2 - 2,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                ctx.font = `${gridSize - 2}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(
+                    item.emoji,
+                    item.x * gridSize + gridSize / 2,
+                    item.y * gridSize + gridSize / 2
+                );
+            });
+
+            // 绘制食物（豆豆）
+            const bean = beanStyles[currentBeanStyle];
+            ctx.fillStyle = bean.color;
+            ctx.shadowColor = bean.color;
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(
+                food.x * gridSize + gridSize / 2,
+                food.y * gridSize + gridSize / 2,
+                gridSize / 2 - 2,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.font = `${gridSize - 2}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(
+                bean.emoji,
+                food.x * gridSize + gridSize / 2,
+                food.y * gridSize + gridSize / 2
+            );
+
+            // 绘制蛇
+            snake.forEach((segment, index) => {
+                const isHead = index === 0;
+                const skin = snakeSkins[currentSnakeSkin];
+                
+                const gradient = ctx.createLinearGradient(
+                    segment.x * gridSize,
+                    segment.y * gridSize,
+                    (segment.x + 1) * gridSize,
+                    (segment.y + 1) * gridSize
+                );
+
+                if (currentSnakeSkin === 'rainbow') {
+                    const colorIndex = index % skin.colors.length;
+                    gradient.addColorStop(0, skin.colors[colorIndex]);
+                    gradient.addColorStop(1, skin.colors[(colorIndex + 1) % skin.colors.length]);
+                } else {
+                    if (isHead) {
+                        gradient.addColorStop(0, skin.colors[0]);
+                        gradient.addColorStop(1, skin.colors[1] || skin.colors[0]);
+                    } else {
+                        const alpha = 1 - (index / snake.length) * 0.5;
+                        gradient.addColorStop(0, skin.colors[0] + Math.floor(alpha * 255).toString(16).padStart(2, '0'));
+                        gradient.addColorStop(1, (skin.colors[1] || skin.colors[0]) + Math.floor(alpha * 255).toString(16).padStart(2, '0'));
+                    }
+                }
+
+                ctx.fillStyle = gradient;
+
+                if (isHead) {
+                    ctx.shadowColor = skin.colors[0];
+                    ctx.shadowBlur = 15;
+                }
+
+                ctx.beginPath();
+                ctx.roundRect(
+                    segment.x * gridSize + 1,
+                    segment.y * gridSize + 1,
+                    gridSize - 2,
+                    gridSize - 2,
+                    isHead ? 6 : 4
+                );
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                if (isHead) {
+                    ctx.font = `${gridSize - 2}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(
+                        skin.emoji,
+                        segment.x * gridSize + gridSize / 2,
+                        segment.y * gridSize + gridSize / 2
+                    );
+                }
+            });
+
+            // 绘制网格
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i <= tileCount; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * gridSize, 0);
+                ctx.lineTo(i * gridSize, canvas.height);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, i * gridSize);
+                ctx.lineTo(canvas.width, i * gridSize);
+                ctx.stroke();
+            }
+        }
+
+        // 游戏结束
+        function gameOver() {
+            isGameRunning = false;
+            clearInterval(gameInterval);
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('finalLevel').textContent = level;
+            
+            updateLeaderboard(score);
+            
+            document.getElementById('gameOverOverlay').classList.remove('hidden');
+        }
+
+        // 更新排行榜
+        function updateLeaderboard(score) {
+            const entry = { 
+                name: snakeSkins[currentSnakeSkin].name + '蛇', 
+                score: score, 
+                level: level,
+                difficulty: difficulty,
+                date: new Date().toLocaleDateString() 
+            };
+            leaderboard.push(entry);
+            
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 10);
+            
+            localStorage.setItem('snakeLeaderboard', JSON.stringify(leaderboard));
+            displayLeaderboard();
+        }
+
+        // 显示排行榜
+        function displayLeaderboard() {
+            const container = document.getElementById('leaderboard');
+            
+            if (leaderboard.length === 0) {
+                container.innerHTML = `
+                    <div class="leaderboard-item">
+                        <span class="leaderboard-rank">1</span>
+                        <span class="leaderboard-name">--</span>
+                        <span class="leaderboard-score">--</span>
+                    </div>
+                    <div class="leaderboard-item">
+                        <span class="leaderboard-rank">2</span>
+                        <span class="leaderboard-name">--</span>
+                        <span class="leaderboard-score">--</span>
+                    </div>
+                    <div class="leaderboard-item">
+                        <span class="leaderboard-rank">3</span>
+                        <span class="leaderboard-name">--</span>
+                        <span class="leaderboard-score">--</span>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = leaderboard.map((entry, index) => `
+                <div class="leaderboard-item">
+                    <span class="leaderboard-rank">${index + 1}</span>
+                    <span class="leaderboard-name">${entry.name} (${difficultyConfigs[entry.difficulty]?.name || '普通'})</span>
+                    <span class="leaderboard-score">${entry.score}分 (${entry.level}关)</span>
+                </div>
+            `).join('');
+        }
+
+        // 键盘事件处理
+        document.addEventListener('keydown', (e) => {
+            if (!isGameRunning) {
+                if (e.code === 'Space' || e.code === 'Enter') {
+                    startGame();
+                }
+                return;
+            }
+
+            if (e.code === 'Space' || e.code === 'KeyP') {
+                e.preventDefault();
+                togglePause();
+                return;
+            }
+
+            const opposites = { up: 'down', down: 'up', left: 'right', right: 'left' };
+
+            switch (e.code) {
+                case 'ArrowUp':
+                case 'KeyW':
+                    e.preventDefault();
+                    if (opposites.up !== direction) nextDirection = 'up';
+                    break;
+                case 'ArrowDown':
+                case 'KeyS':
+                    e.preventDefault();
+                    if (opposites.down !== direction) nextDirection = 'down';
+                    break;
+                case 'ArrowLeft':
+                case 'KeyA':
+                    e.preventDefault();
+                    if (opposites.left !== direction) nextDirection = 'left';
+                    break;
+                case 'ArrowRight':
+                case 'KeyD':
+                    e.preventDefault();
+                    if (opposites.right !== direction) nextDirection = 'right';
+                    break;
+            }
+        });
+
+        // 触屏控制事件
+        document.querySelectorAll('.touch-btn[data-dir]').forEach(btn => {
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const dir = btn.dataset.dir;
+                const opposites = { up: 'down', down: 'up', left: 'right', right: 'left' };
+                if (opposites[dir] !== direction) {
+                    nextDirection = dir;
+                }
+            });
+
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const dir = btn.dataset.dir;
+                const opposites = { up: 'down', down: 'up', left: 'right', right: 'left' };
+                if (opposites[dir] !== direction) {
+                    nextDirection = dir;
+                }
+            });
+        });
+
+        // 滑动手势支持
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        canvas.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (!isGameRunning || isPaused) return;
+
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            
+            const minSwipeDistance = 30;
+
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                if (Math.abs(deltaX) > minSwipeDistance) {
+                    if (deltaX > 0 && direction !== 'left') {
+                        nextDirection = 'right';
+                    } else if (deltaX < 0 && direction !== 'right') {
+                        nextDirection = 'left';
+                    }
+                }
+            } else {
+                if (Math.abs(deltaY) > minSwipeDistance) {
+                    if (deltaY > 0 && direction !== 'up') {
+                        nextDirection = 'down';
+                    } else if (deltaY < 0 && direction !== 'down') {
+                        nextDirection = 'up';
+                    }
+                }
+            }
+        }, { passive: true });
+
+        // 初始化
+        initSkinSelectors();
+        initGame();
+        draw();
+        updateDifficultyIndicator();
+    </script>
+</body>
+</html>
